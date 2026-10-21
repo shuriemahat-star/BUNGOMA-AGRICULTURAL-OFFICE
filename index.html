@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Bungoma Agricultural Extension Communication Management System demo">
+  <title>Bungoma Extension Communication System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="login-screen" class="login-wrap">
+    <form id="login-form" class="login-card">
+      <div class="brand-mark">BA</div><p class="eyebrow">BUNGOMA AGRICULTURAL OFFICE</p>
+      <h1>Extension Communication</h1><p class="muted">Sign in to manage farmers, announcements and delivery records.</p>
+      <label for="username">Username</label><input id="username" autocomplete="username" required placeholder="Enter username">
+      <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required placeholder="Enter password">
+      <p id="login-error" class="error" role="alert"></p><button class="primary full" type="submit">Sign in</button>
+      <p class="hint">Demo: <b>mahad</b> / <b>shukri9274</b> or <b>manager</b> / <b>Password123!</b></p>
+    </form>
+  </div>
+  <div id="app" class="app-shell hidden">
+    <aside class="sidebar"><div class="brand"><div class="brand-mark small">BA</div><div><b>Bungoma Extension</b><small>Communication system</small></div></div>
+      <nav id="nav"><button class="nav-link active" data-page="dashboard">▦ <span>Dashboard</span></button><button class="nav-link" data-page="farmers">♧ <span>Farmers</span></button><button class="nav-link" data-page="announcements">▤ <span>Announcements</span></button><button class="nav-link" data-page="deliveries">↗ <span>Delivery log</span></button><button class="nav-link" data-page="reports">▥ <span>Reports</span></button></nav>
+      <div class="sidebar-bottom"><span class="status-dot"></span> Demo mode <button id="logout" class="logout">Sign out ↗</button></div>
+    </aside>
+    <main class="main"><header class="topbar"><div><p class="eyebrow">AGRICULTURAL EXTENSION</p><h2 id="page-title">Dashboard</h2></div><div class="profile"><div class="avatar" id="avatar">M</div><div><b id="profile-name">Officer</b><small id="profile-role">Extension officer</small></div></div></header>
+      <div id="notice" class="notice hidden" role="status"></div><section id="page-content"></section>
+      <footer>Class project prototype · SMS sending is simulated in this GitHub Pages version.</footer>
+    </main>
+  </div>
+  <dialog id="item-dialog"><form id="item-form" method="dialog"><div class="dialog-head"><h3 id="dialog-title">Add record</h3><button type="button" class="icon-btn" id="close-dialog" aria-label="Close">✕</button></div><div id="dialog-fields"></div><div class="dialog-actions"><button type="button" class="secondary" id="cancel-dialog">Cancel</button><button class="primary" type="submit">Save</button></div></form></dialog>
+  <script src="app.js"></script>
+</body></html>
