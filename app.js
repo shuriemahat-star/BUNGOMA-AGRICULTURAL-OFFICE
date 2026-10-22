@@ -41,7 +41,72 @@
   function openForm(type,id=null){formType=type;editing=id;const item=id?(type==='farmer'?farmer(id):announcement(id)):null;$('#dialog-title').textContent=(id?'Edit ':'Add ')+(type==='farmer'?'farmer':'announcement');$('#dialog-fields').innerHTML=fields[type].map(([key,label,kind,required,options])=>{const val=item?.[key]??(key==='date'?new Date().toISOString().slice(0,10):key==='ward'?(type==='farmer'?'Kanduyi':'All wards'):key==='status'?'Draft':'');let input='';if(kind==='select')input=`<select name="${key}" ${required?'required':''}>${options.map(o=>`<option ${val===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`;else if(kind==='textarea')input=`<textarea name="${key}" ${required?'required':''}>${esc(val)}</textarea>`;else input=`<input name="${key}" type="${kind}" value="${esc(val)}" ${required?'required':''} ${key==='phone'?'pattern="[0-9+() -]{7,20}"':''}>`;return `<div class="field"><label>${label}</label>${input}</div>`}).join('');$('#item-dialog').showModal();}
   $('#close-dialog').addEventListener('click',()=>$('#item-dialog').close());$('#cancel-dialog').addEventListener('click',()=>$('#item-dialog').close());
   $('#item-form').addEventListener('submit',e=>{e.preventDefault();const obj=Object.fromEntries(new FormData(e.currentTarget).entries());if(formType==='farmer'){if(editing)Object.assign(farmer(editing),obj);else{obj.id=Date.now();data.farmers.push(obj)}}else{if(editing)Object.assign(announcement(editing),obj);else{obj.id=Date.now();data.announcements.push(obj)}}save();$('#item-dialog').close();render();toast('Record saved successfully.');});
-  function sendDemo(id){const a=announcement(id);if(!a)return;const targets=data.farmers.filter(f=>a.ward==='All wards'||f.ward===a.ward);let added=0;for(const f of targets){if(!data.deliveries.some(d=>d.farmerId===f.id&&d.announcementId===a.id)){data.deliveries.push({id:Date.now()+added,farmerId:f.id,announcementId:a.id,status:'Pending',date:new Date().toISOString()});added++}}save();render();toast(`Created ${added} demo delivery record(s). No SMS was sent.`,true);}
+  
+async function sendDemo(id) {
+  const a = announcement(id);
+  if (!a) return;
+
+  const targets = data.farmers.filter(
+    f => a.ward === 'All wards' || f.ward === a.ward
+  );
+
+  if (!targets.length) {
+    toast('No farmers found for this ward.', true);
+    return;
+  }
+
+  if (!confirm(`Send SMS requests to ${targets.length} farmer(s)?`)) return;
+
+  let sent = 0;
+  let failed = 0;
+
+  for (const f of targets) {
+    let phone = f.phone.replace(/\D/g, '');
+    if (phone.startsWith('0')) {
+      phone = '+254' + phone.slice(1);
+    } else if (phone.startsWith('254')) {
+      phone = '+' + phone;
+    }
+
+    try {
+      const response = await fetch(
+        'https://bungoma-agricultural-office-1.onrender.com/send-sms',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: phone,
+            message: a.message
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        failed++;
+        continue;
+      }
+
+      data.deliveries.push({
+        id: Date.now() + sent,
+        farmerId: f.id,
+        announcementId: a.id,
+        status: 'Pending',
+        date: new Date().toISOString()
+      });
+
+      sent++;
+    } catch (error) {
+      failed++;
+    }
+  }
+
+  save();
+  render();
+  toast(`Requests accepted: ${sent}. Failed: ${failed}.`, failed > 0);
+}
+
   function exportCsv(){const rows=[['Farmer','Phone','Ward','Announcement','Status','Date'],...data.deliveries.map(d=>[farmer(d.farmerId)?.name||'',farmer(d.farmerId)?.phone||'',farmer(d.farmerId)?.ward||'',announcement(d.announcementId)?.title||'',d.status,d.date])];const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='bungoma-delivery-report.csv';a.click();URL.revokeObjectURL(url);}
   document.addEventListener('click',e=>{const pg=e.target.closest('[data-page]');if(pg&&pg.dataset.page){page=pg.dataset.page;$$('.nav-link').forEach(n=>n.classList.toggle('active',n.dataset.page===page));render();return}const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action,id=Number(b.dataset.id);if(a==='add-farmer')openForm('farmer');if(a==='edit-farmer')openForm('farmer',id);if(a==='add-announcement')openForm('announcement');if(a==='edit-announcement')openForm('announcement',id);if(a==='delete-farmer'&&confirm('Delete this farmer record?')){data.farmers=data.farmers.filter(f=>f.id!==id);save();render();toast('Farmer record deleted.')}if(a==='delete-announcement'&&confirm('Delete this announcement?')){data.announcements=data.announcements.filter(x=>x.id!==id);save();render();toast('Announcement deleted.')}if(a==='publish'){const an=announcement(id);an.status='Published';save();render();toast('Announcement published.')}if(a==='send')sendDemo(id);if(a==='mark-delivered'){const d=data.deliveries.find(x=>x.id===id);d.status='Delivered';save();render();toast('Demo delivery marked delivered.')}if(a==='confirm'){const d=data.deliveries.find(x=>x.id===id);d.status='Confirmed';save();render();toast('Receipt confirmation recorded.')}if(a==='export')exportCsv();});
   document.addEventListener('input',e=>{if(e.target.id==='search'){searchTerm=e.target.value;const pos=e.target.selectionStart;render();const i=$('#search');i.focus();i.setSelectionRange(pos,pos);}});
