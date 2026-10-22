@@ -9,6 +9,6 @@
   },
   "dependencies": {
     "express": "^4.21.2",
-     "africastalking": "^0.2.4"
+     "africastalking": "^0.8.4"
   }
 }
