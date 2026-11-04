@@ -164,6 +164,85 @@ app.post("/send-sms", requireStaff, async (req, res) => {
     });
   }
 });
+// Create a farmer login account
+app.post("/create-farmer-account", requireStaff, async (req, res) => {
+  try {
+    const { full_name, email, password, phone, ward } = req.body;
+
+    // Validate farmer details
+    if (
+      !full_name ||
+      !email ||
+      !password ||
+      !phone ||
+      !ward
+    ) {
+      return res.status(400).json({
+        error: "All farmer details are required."
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        error: "Password must contain at least 8 characters."
+      });
+    }
+
+    // Create farmer authentication account
+    const { data, error } =
+      await supabase.auth.admin.createUser({
+        email: email.trim().toLowerCase(),
+        password: password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: full_name.trim(),
+          role: "farmer"
+        }
+      });
+
+    if (error) {
+      return res.status(400).json({
+        error: error.message
+      });
+    }
+
+    // Save farmer role in profiles table
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert({
+        id: data.user.id,
+        role: "farmer"
+      });
+
+    if (profileError) {
+      // Remove the authentication account if profile creation fails
+      await supabase.auth.admin.deleteUser(data.user.id);
+
+      console.error("Profile creation failed:", profileError.message);
+
+      return res.status(500).json({
+        error: "Farmer account could not be saved."
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Farmer account created successfully.",
+      farmer: {
+        id: data.user.id,
+        email: data.user.email,
+        full_name: full_name
+      }
+    });
+
+  } catch (error) {
+    console.error("Farmer registration failed:", error.message);
+
+    return res.status(500).json({
+      error: "Could not create farmer account."
+    });
+  }
+});
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Bungoma backend running on port ${PORT}`);
