@@ -1,4 +1,12 @@
 (() => {
+    // Supabase connection
+  const SUPABASE_URL = 'https://rlofbrizsahxurqgddie.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_Mma9FxsLfXFlZ2zmkOEvHw_HZd6n8O7';
+
+  const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
   const $ = (s, root=document) => root.querySelector(s);
   const $$ = (s, root=document) => [...root.querySelectorAll(s)];
   const STORE = 'bungoma_extension_demo_v1';
@@ -25,8 +33,58 @@
   const statusPill = s => `<span class="pill ${esc(String(s).toLowerCase())}">${esc(s)}</span>`;
   function toast(msg, warning=false){const n=$('#notice');n.textContent=msg;n.classList.remove('hidden','warning');if(warning)n.classList.add('warning');setTimeout(()=>n.classList.add('hidden'),3500)}
   function showApp(){ $('#login-screen').classList.add('hidden');$('#app').classList.remove('hidden');$('#profile-name').textContent=user.name;$('#profile-role').textContent=user.role;$('#avatar').textContent=user.name[0].toUpperCase();render(); }
-  $('#login-form').addEventListener('submit',e=>{e.preventDefault();const u=$('#username').value.trim(),p=$('#password').value; if((u==='mahad'&&p==='shukri9274')||(u==='manager'&&p==='Password123!')){user={name:u==='manager'?'Management':'Mahad',role:u==='manager'?'Management':'Extension officer'};$('#login-error').textContent='';showApp()}else $('#login-error').textContent='Incorrect demo username or password.';});
-  $('#logout').addEventListener('click',()=>{user=null;$('#app').classList.add('hidden');$('#login-screen').classList.remove('hidden');$('#password').value='';});
+  $('#login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const email = $('#username').value.trim();
+  const password = $('#password').value;
+  const errorBox = $('#login-error');
+
+  errorBox.textContent = 'Signing in...';
+
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) throw error;
+
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('full_name, role')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profileError || !profile ||
+        !['officer', 'management'].includes(profile.role)) {
+      await supabaseClient.auth.signOut();
+      throw new Error('Access denied. This account is not authorised staff.');
+    }
+
+    user = {
+      name: profile.full_name || email,
+      role: profile.role === 'management'
+        ? 'Management'
+        : 'Extension officer'
+    };
+
+    errorBox.textContent = '';
+    showApp();
+
+  } catch (error) {
+    errorBox.textContent = error.message || 'Sign-in failed.';
+  }
+});
+  $('#logout').addEventListener('click', async () => {
+  await supabaseClient.auth.signOut();
+  user = null;
+  $('#app').classList.add('hidden');
+  $('#login-screen').classList.remove('hidden');
+  $('#password').value = '';
+  $('#username').value = '';
+  $('#login-error').textContent = '';
+});
   $('#nav').addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(!b)return;page=b.dataset.page;searchTerm='';$$('.nav-link').forEach(n=>n.classList.toggle('active',n===b));render();});
   function intro(title,sub,button,label){return `<div class="page-intro"><div><h3>${title}</h3><p>${sub}</p></div>${button?`<button class="primary" data-action="${button}">＋ ${label}</button>`:''}</div>`}
   function table(headers, rows, empty='No records found.'){return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${headers.length}" class="empty">${empty}</td></tr>`}</tbody></table></div>`}
@@ -44,6 +102,18 @@
   
 async function sendDemo(id) {
   const a = announcement(id);
+    const { data: sessionData, error: sessionError } =
+    await supabaseClient.auth.getSession();
+
+  if (sessionError || !sessionData.session) {
+    toast('Please sign in again before sending SMS.', true);
+    return;
+  }
+
+  if (!['officer', 'management'].includes(user?.role?.toLowerCase() === 'extension officer' ? 'officer' : user?.role?.toLowerCase())) {
+    toast('Only authorised staff can send SMS.', true);
+    return;
+  }
   if (!a) return;
 
   const targets = data.farmers.filter(
@@ -73,7 +143,10 @@ async function sendDemo(id) {
         'https://bungoma-agricultural-office-1.onrender.com/send-sms',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${(await supabaseClient.auth.getSession()).data.session?.access_token || ''}`
+},
           body: JSON.stringify({
             to: phone,
             message: a.message
