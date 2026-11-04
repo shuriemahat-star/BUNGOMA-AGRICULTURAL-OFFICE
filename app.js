@@ -33,6 +33,15 @@
   const statusPill = s => `<span class="pill ${esc(String(s).toLowerCase())}">${esc(s)}</span>`;
   function toast(msg, warning=false){const n=$('#notice');n.textContent=msg;n.classList.remove('hidden','warning');if(warning)n.classList.add('warning');setTimeout(()=>n.classList.add('hidden'),3500)}
   function showApp(){ $('#login-screen').classList.add('hidden');$('#app').classList.remove('hidden');$('#profile-name').textContent=user.name;$('#profile-role').textContent=user.role;$('#avatar').textContent=user.name[0].toUpperCase();render(); }
+    $('#staff-choice').addEventListener('click', () => {
+  $('.login-card').classList.add('hidden');
+  $('#login-form').classList.remove('hidden');
+});
+
+$('#back-to-portals').addEventListener('click', () => {
+  $('#login-form').classList.add('hidden');
+  $('.login-card').classList.remove('hidden');
+});
   $('#login-form').addEventListener('submit', async e => {
   e.preventDefault();
 
