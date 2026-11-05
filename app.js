@@ -57,8 +57,7 @@
       .eq('id', data.user.id)
       .single();
 
-    if (profileError || !profile ||
-        !['officer', 'management'].includes(profile.role)) {
+    if (profileError || !profile) {
       await supabaseClient.auth.signOut();
       throw new Error('Access denied. This account is not authorised staff.');
     }
