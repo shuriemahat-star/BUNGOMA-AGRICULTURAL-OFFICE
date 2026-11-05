@@ -87,8 +87,8 @@ $('#show-register').addEventListener('click', () => {
 $('#back-login').addEventListener('click', () => {
   $('#register-form').classList.add('hidden');
   $('#login-form').classList.remove('hidden');
-});
-  $('#logout').addEventListener('click', async () => {
+    });
+   $('#logout').addEventListener('click', async () => {
   await supabaseClient.auth.signOut();
   user = null;
   $('#app').classList.add('hidden');
