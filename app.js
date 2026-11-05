@@ -34,6 +34,34 @@
   function toast(msg, warning=false){const n=$('#notice');n.textContent=msg;n.classList.remove('hidden','warning');if(warning)n.classList.add('warning');setTimeout(()=>n.classList.add('hidden'),3500)}
   function showApp(){ $('#login-screen').classList.add('hidden');$('#app').classList.remove('hidden');$('#profile-name').textContent=user.name;$('#profile-role').textContent=user.role;$('#avatar').textContent=user.name[0].toUpperCase();render(); }
 
+    function showFarmerDashboard() {
+  $('#login-screen').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+
+  $('#profile-name').textContent = user.name;
+  $('#profile-role').textContent = 'Farmer';
+  $('#avatar').textContent = user.name[0].toUpperCase();
+
+  const content = $('#page-content');
+  $('#page-title').textContent = 'Farmer Dashboard';
+
+  content.innerHTML = `
+    <div class="page-intro">
+      <div>
+        <h3>Welcome, ${esc(user.name)}</h3>
+        <p>Welcome to the Bungoma Agricultural Extension Communication Portal.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Agricultural announcements</h3>
+      <p>Published farming updates and training notices will appear here.</p>
+    </div>
+  `;
+
+  $('#nav').classList.add('hidden');
+}
+
   $('#login-form').addEventListener('submit', async e => {
   e.preventDefault();
 
