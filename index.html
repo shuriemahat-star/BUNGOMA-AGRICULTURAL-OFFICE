@@ -28,13 +28,55 @@
   </button>
 </p>
   </form>
-  <form id="login-form">
-  <!-- Login fields -->
+
+
+<form id="register-form" class="login-card hidden">
+  <div class="brand-mark">BA</div>
+  <p class="eyebrow">FARMER REGISTRATION</p>
+  <h1>Create Farmer Account</h1>
+  <p class="muted">Register to receive agricultural updates.</p>
+
+  <label for="farmer-name">Full name</label>
+  <input id="farmer-name" type="text" required placeholder="Enter full name">
+
+  <label for="farmer-email">Email address</label>
+  <input id="farmer-email" type="email" required placeholder="Enter email">
+
+  <label for="farmer-password">Password</label>
+  <input id="farmer-password" type="password" minlength="6" required placeholder="Create password">
+
+  <label for="farmer-phone">Phone number</label>
+  <input id="farmer-phone" type="tel" required placeholder="e.g. 0712345678">
+
+  <label for="farmer-ward">Ward</label>
+  <select id="farmer-ward" required>
+    <option value="">Select ward</option>
+    <option>Kanduyi</option>
+    <option>Webuye</option>
+    <option>Kimilili</option>
+    <option>Tongaren</option>
+    <option>Bumula</option>
+    <option>Kabuchai</option>
+    <option>Sirisia</option>
+  </select>
+
+  <label for="farmer-interest">Farming interest</label>
+  <select id="farmer-interest" required>
+    <option value="">Select interest</option>
+    <option>Maize</option>
+    <option>Beans</option>
+    <option>Dairy</option>
+    <option>Poultry</option>
+    <option>Horticulture</option>
+    <option>Other</option>
+  </select>
+
+  <p id="register-error" class="error" role="alert"></p>
+
+  <button class="primary full" type="submit">Create Account</button>
+  <button class="secondary full" type="button" id="back-login">Back to Login</button>
 </form>
 
-<!-- PASTE THE NEW FARMER REGISTRATION FORM HERE -->
-
-</div>
 </div>
   <div id="app" class="app-shell hidden">
     <aside class="sidebar"><div class="brand"><div class="brand-mark small">BA</div><div><b>Bungoma Extension</b><small>Communication system</small></div></div>
