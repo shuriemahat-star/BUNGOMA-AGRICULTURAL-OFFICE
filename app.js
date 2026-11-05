@@ -58,12 +58,12 @@
       .single();
 
     if (profileError || !profile) {
-      await supabaseClient.auth.signOut();
-      throw new Error('Access denied. This account is not authorised staff.');
-    }
+  await supabaseClient.auth.signOut();
+  throw new Error('Could not load your account profile.');
+}
 
-    user = {
-    if (profile.role === 'farmer') {
+// Farmer login
+if (profile.role === 'farmer') {
   user = {
     name: profile.full_name || email,
     role: 'Farmer'
@@ -72,6 +72,12 @@
   errorBox.textContent = '';
   showFarmerDashboard();
   return;
+}
+
+// Staff login
+if (!['officer', 'management'].includes(profile.role)) {
+  await supabaseClient.auth.signOut();
+  throw new Error('This account has no authorised role.');
 }
 
 user = {
