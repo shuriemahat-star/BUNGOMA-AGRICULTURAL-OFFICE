@@ -34,7 +34,7 @@
   function toast(msg, warning=false){const n=$('#notice');n.textContent=msg;n.classList.remove('hidden','warning');if(warning)n.classList.add('warning');setTimeout(()=>n.classList.add('hidden'),3500)}
   function showApp(){ $('#login-screen').classList.add('hidden');$('#app').classList.remove('hidden');$('#profile-name').textContent=user.name;$('#profile-role').textContent=user.role;$('#avatar').textContent=user.name[0].toUpperCase();render(); }
 
-    function showFarmerDashboard() {
+    async function showFarmerDashboard() {
   $('#login-screen').classList.add('hidden');
   $('#app').classList.remove('hidden');
 
@@ -42,24 +42,66 @@
   $('#profile-role').textContent = 'Farmer';
   $('#avatar').textContent = user.name[0].toUpperCase();
 
+  $('#nav').classList.add('hidden');
+
   const content = $('#page-content');
   $('#page-title').textContent = 'Farmer Dashboard';
 
-  content.innerHTML = `
-    <div class="page-intro">
-      <div>
-        <h3>Welcome, ${esc(user.name)}</h3>
-        <p>Welcome to the Bungoma Agricultural Extension Communication Portal.</p>
+  content.innerHTML = '<p>Loading your announcements...</p>';
+
+  try {
+    const { data: farmerData, error: farmerError } =
+      await supabaseClient
+        .from('farmer_profiles')
+        .select('ward')
+        .eq('id', (await supabaseClient.auth.getUser()).data.user.id)
+        .single();
+
+    if (farmerError) throw farmerError;
+
+    const { data: announcements, error } =
+      await supabaseClient
+        .from('announcements')
+        .select('title, message, target_ward, created_at')
+        .eq('status', 'Published')
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const relevant = announcements.filter(a =>
+      a.target_ward === 'All wards' ||
+      a.target_ward === farmerData.ward
+    );
+
+    content.innerHTML = `
+      <div class="page-intro">
+        <div>
+          <h3>Welcome, ${esc(user.name)}</h3>
+          <p>Your ward: ${esc(farmerData.ward || 'Not set')}</p>
+        </div>
       </div>
-    </div>
 
-    <div class="panel">
-      <h3>Agricultural announcements</h3>
-      <p>Published farming updates and training notices will appear here.</p>
-    </div>
-  `;
+      <div class="panel">
+        <h3>Agricultural announcements</h3>
+        ${
+          relevant.length
+            ? relevant.map(a => `
+              <div class="panel">
+                <h3>${esc(a.title)}</h3>
+                <p>${esc(a.message)}</p>
+                <small>Target: ${esc(a.target_ward)}</small>
+              </div>
+            `).join('')
+            : '<p>No published announcements for your ward yet.</p>'
+        }
+      </div>
+    `;
 
-  $('#nav').classList.add('hidden');
+  } catch (error) {
+    content.innerHTML =
+      '<p>Could not load announcements: ' +
+      esc(error.message) + '</p>';
+  }
 }
 
   $('#login-form').addEventListener('submit', async e => {
