@@ -164,86 +164,59 @@ app.post("/send-sms", requireStaff, async (req, res) => {
     });
   }
 });
-// Create a farmer login account
+// Invite a farmer to create their own password
 app.post("/create-farmer-account", requireStaff, async (req, res) => {
   try {
-    const { full_name, email, password, phone, ward } = req.body;
+    const { full_name, email, phone, ward, interests } = req.body;
 
-    // Validate farmer details
-    if (
-      !full_name ||
-      !email ||
-      !password ||
-      !phone ||
-      !ward
-    ) {
+    if (!full_name || !email || !phone || !ward) {
       return res.status(400).json({
-        error: "All farmer details are required."
+        error: "Name, email, phone and ward are required."
       });
     }
 
-    if (password.length < 8) {
-      return res.status(400).json({
-        error: "Password must contain at least 8 characters."
-      });
-    }
+    const { data, error } = await supabase.auth.admin.inviteUserByEmail(
+      email.trim().toLowerCase(),
+      {
+        redirectTo: "https://shuriemahat-star.github.io/BUNGOMA-AGRICULTURAL-OFFICE/"
+      }
+    );
 
-    // Create farmer authentication account
-    const { data, error } =
-      await supabase.auth.admin.createUser({
-        email: email.trim().toLowerCase(),
-        password: password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: full_name.trim(),
-          role: "farmer"
-        }
-      });
+    if (error) throw error;
 
-    if (error) {
-      return res.status(400).json({
-        error: error.message
-      });
-    }
+    const farmerId = data.user.id;
 
-    // Save farmer role in profiles table
     const { error: profileError } = await supabase
       .from("profiles")
       .insert({
-        id: data.user.id,
+        id: farmerId,
+        full_name: full_name.trim(),
         role: "farmer"
       });
 
-    if (profileError) {
-      // Remove the authentication account if profile creation fails
-      await supabase.auth.admin.deleteUser(data.user.id);
+    if (profileError) throw profileError;
 
-      console.error("Profile creation failed:", profileError.message);
-
-      return res.status(500).json({
-        error: "Farmer account could not be saved."
+    const { error: farmerError } = await supabase
+      .from("farmer_profiles")
+      .insert({
+        id: farmerId,
+        phone: phone.trim(),
+        ward: ward.trim(),
+        interests: interests || null
       });
-    }
 
-    return res.status(201).json({
+    if (farmerError) throw farmerError;
+
+    res.status(201).json({
       success: true,
-      message: "Farmer account created successfully.",
-      farmer: {
-        id: data.user.id,
-        email: data.user.email,
-        full_name: full_name
-      }
+      message: "Invitation sent to farmer's email."
     });
 
   } catch (error) {
-    console.error("Farmer registration failed:", error.message);
-
-    return res.status(500).json({
-      error: "Could not create farmer account."
-    });
+    console.error("Farmer invitation failed:", error.message);
+    res.status(500).json({ error: error.message });
   }
 });
-
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Bungoma backend running on port ${PORT}`);
 });
