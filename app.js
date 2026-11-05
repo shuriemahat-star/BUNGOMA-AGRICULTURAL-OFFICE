@@ -64,14 +64,26 @@
     }
 
     user = {
-      name: profile.full_name || email,
-      role: profile.role === 'management'
-        ? 'Management'
-        : 'Extension officer'
-    };
+    if (profile.role === 'farmer') {
+  user = {
+    name: profile.full_name || email,
+    role: 'Farmer'
+  };
 
-    errorBox.textContent = '';
-    showApp();
+  errorBox.textContent = '';
+  showFarmerDashboard();
+  return;
+}
+
+user = {
+  name: profile.full_name || email,
+  role: profile.role === 'management'
+    ? 'Management'
+    : 'Extension officer'
+};
+
+errorBox.textContent = '';
+showApp();
 
   } catch (error) {
     errorBox.textContent = error.message || 'Sign-in failed.';
