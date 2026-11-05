@@ -77,6 +77,17 @@
     errorBox.textContent = error.message || 'Sign-in failed.';
   }
 });
+    // Show farmer registration form
+$('#show-register').addEventListener('click', () => {
+  $('#login-form').classList.add('hidden');
+  $('#register-form').classList.remove('hidden');
+});
+
+// Return to login
+$('#back-login').addEventListener('click', () => {
+  $('#register-form').classList.add('hidden');
+  $('#login-form').classList.remove('hidden');
+});
   $('#logout').addEventListener('click', async () => {
   await supabaseClient.auth.signOut();
   user = null;
