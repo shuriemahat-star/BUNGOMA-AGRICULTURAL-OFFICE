@@ -87,7 +87,49 @@ $('#show-register').addEventListener('click', () => {
 $('#back-login').addEventListener('click', () => {
   $('#register-form').classList.add('hidden');
   $('#login-form').classList.remove('hidden');
+});
+
+    // Register a new farmer
+$('#register-form').addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const name = $('#farmer-name').value.trim();
+  const email = $('#farmer-email').value.trim();
+  const password = $('#farmer-password').value;
+  const phone = $('#farmer-phone').value.trim();
+  const ward = $('#farmer-ward').value;
+  const interests = $('#farmer-interest').value;
+  const errorBox = $('#register-error');
+
+  errorBox.textContent = 'Creating your account...';
+
+  try {
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name }
+      }
     });
+
+    if (error) throw error;
+
+    if (data.user) {
+      const { error: updateError } = await supabaseClient
+        .from('farmer_profiles')
+        .update({ phone, ward, interests })
+        .eq('id', data.user.id);
+
+      if (updateError) throw updateError;
+    }
+
+    errorBox.textContent =
+      'Account created! Check your email to confirm your account, then sign in.';
+
+  } catch (error) {
+    errorBox.textContent = error.message || 'Registration failed.';
+  }
+});
    $('#logout').addEventListener('click', async () => {
   await supabaseClient.auth.signOut();
   user = null;
