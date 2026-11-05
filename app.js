@@ -239,7 +239,66 @@ $('#register-form').addEventListener('submit', async e => {
   const fields={farmer:[['name','Farmer name','text',true],['phone','Phone number','tel',true],['ward','Ward','select',true,['Kanduyi','Webuye','Kimilili','Tongaren','Bumula','Kabuchai','Sirisia','All wards']],['crop','Main interest','select',true,['Maize','Beans','Dairy','Poultry','Horticulture','Other']]],announcement:[['title','Announcement title','text',true],['message','Message body','textarea',true],['ward','Target ward','select',true,['All wards','Kanduyi','Webuye','Kimilili','Tongaren','Bumula','Kabuchai','Sirisia']],['date','Date','date',true],['status','Status','select',true,['Draft','Published']]]};
   function openForm(type,id=null){formType=type;editing=id;const item=id?(type==='farmer'?farmer(id):announcement(id)):null;$('#dialog-title').textContent=(id?'Edit ':'Add ')+(type==='farmer'?'farmer':'announcement');$('#dialog-fields').innerHTML=fields[type].map(([key,label,kind,required,options])=>{const val=item?.[key]??(key==='date'?new Date().toISOString().slice(0,10):key==='ward'?(type==='farmer'?'Kanduyi':'All wards'):key==='status'?'Draft':'');let input='';if(kind==='select')input=`<select name="${key}" ${required?'required':''}>${options.map(o=>`<option ${val===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`;else if(kind==='textarea')input=`<textarea name="${key}" ${required?'required':''}>${esc(val)}</textarea>`;else input=`<input name="${key}" type="${kind}" value="${esc(val)}" ${required?'required':''} ${key==='phone'?'pattern="[0-9+() -]{7,20}"':''}>`;return `<div class="field"><label>${label}</label>${input}</div>`}).join('');$('#item-dialog').showModal();}
   $('#close-dialog').addEventListener('click',()=>$('#item-dialog').close());$('#cancel-dialog').addEventListener('click',()=>$('#item-dialog').close());
-  $('#item-form').addEventListener('submit',e=>{e.preventDefault();const obj=Object.fromEntries(new FormData(e.currentTarget).entries());if(formType==='farmer'){if(editing)Object.assign(farmer(editing),obj);else{obj.id=Date.now();data.farmers.push(obj)}}else{if(editing)Object.assign(announcement(editing),obj);else{obj.id=Date.now();data.announcements.push(obj)}}save();$('#item-dialog').close();render();toast('Record saved successfully.');});
+  $('#item-form').addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const obj = Object.fromEntries(new FormData(e.currentTarget).entries());
+
+  try {
+    if (formType === 'farmer') {
+      if (editing) {
+        Object.assign(farmer(editing), obj);
+      } else {
+        obj.id = Date.now();
+        data.farmers.push(obj);
+      }
+
+      save();
+
+    } else {
+      const { data: authData, error: authError } =
+        await supabaseClient.auth.getUser();
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Please sign in again.');
+
+      const { data: savedAnnouncement, error } =
+        await supabaseClient
+          .from('announcements')
+          .insert({
+            title: obj.title,
+            message: obj.message,
+            target_ward: obj.ward,
+            status: obj.status,
+            created_by: authData.user.id
+          })
+          .select()
+          .single();
+
+      if (error) throw error;
+
+      data.announcements.push({
+        id: savedAnnouncement.id,
+        title: savedAnnouncement.title,
+        message: savedAnnouncement.message,
+        ward: savedAnnouncement.target_ward,
+        date: savedAnnouncement.created_at
+          ? savedAnnouncement.created_at.slice(0, 10)
+          : obj.date,
+        status: savedAnnouncement.status
+      });
+
+      save();
+    }
+
+    $('#item-dialog').close();
+    render();
+    toast('Record saved successfully.');
+
+  } catch (error) {
+    toast('Could not save record: ' + error.message, true);
+  }
+});
   
 async function sendDemo(id) {
   const a = announcement(id);
