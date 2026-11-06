@@ -63,7 +63,7 @@
       await supabaseClient
         .from('announcements')
         .select('title, message, target_ward, created_at')
-        .eq('status', 'Published')
+        .eq('status', 'published')
         .order('created_at', { ascending: false });
 
     if (error) throw error;
