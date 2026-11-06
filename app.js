@@ -234,7 +234,7 @@ $('#register-form').addEventListener('submit', async e => {
     $$('.nav-link').forEach(n=>n.classList.toggle('active',n===b));
     render();
 
-    if(page==='farmers'){
+    if(page==='farmers' || page==='dashboard' || page==='reports'){
       await loadFarmersFromSupabase();
     }
   });
