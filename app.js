@@ -269,7 +269,7 @@ $('#register-form').addEventListener('submit', async e => {
             title: obj.title,
             message: obj.message,
             target_ward: obj.ward,
-            status: obj.status,
+            status: obj.status.toLowerCase(),
             created_by: authData.user.id
           })
           .select()
