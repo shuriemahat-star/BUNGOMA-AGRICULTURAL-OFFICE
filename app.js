@@ -385,7 +385,10 @@ function table(headers, rows, emptyMessage) {
   
 async function sendDemo(id) {
   const a = announcement(id);
-    const { data: sessionData, error: sessionError } =
+
+  if (!a) return;
+
+  const { data: sessionData, error: sessionError } =
     await supabaseClient.auth.getSession();
 
   if (sessionError || !sessionData.session) {
@@ -393,11 +396,16 @@ async function sendDemo(id) {
     return;
   }
 
-  if (!['officer', 'management'].includes(user?.role?.toLowerCase() === 'extension officer' ? 'officer' : user?.role?.toLowerCase())) {
+  if (
+    !['officer', 'management'].includes(
+      user?.role?.toLowerCase() === 'extension officer'
+        ? 'officer'
+        : user?.role?.toLowerCase()
+    )
+  ) {
     toast('Only authorised staff can send SMS.', true);
     return;
   }
-  if (!a) return;
 
   const targets = data.farmers.filter(
     f => a.ward === 'All wards' || f.ward === a.ward
@@ -408,17 +416,32 @@ async function sendDemo(id) {
     return;
   }
 
-  if (!confirm(`Send SMS requests to ${targets.length} farmer(s)?`)) return;
+  if (!confirm(
+    `Send REAL SMS requests to ${targets.length} farmer(s) in ${a.ward}?`
+  )) return;
 
   let sent = 0;
   let failed = 0;
 
+  const token = sessionData.session.access_token;
+
   for (const f of targets) {
-    let phone = f.phone.replace(/\D/g, '');
+    let phone = String(f.phone || '').replace(/\D/g, '');
+
     if (phone.startsWith('0')) {
       phone = '+254' + phone.slice(1);
     } else if (phone.startsWith('254')) {
       phone = '+' + phone;
+    } else if (phone.startsWith('7') || phone.startsWith('1')) {
+      phone = '+254' + phone;
+    } else {
+      failed++;
+      continue;
+    }
+
+    if (!/^\+254[17]\d{8}$/.test(phone)) {
+      failed++;
+      continue;
     }
 
     try {
@@ -427,12 +450,18 @@ async function sendDemo(id) {
         {
           method: 'POST',
           headers: {
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${(await supabaseClient.auth.getSession()).data.session?.access_token || ''}`
-},
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({
             to: phone,
-            message: a.message
+            message: a.message,
+            announcement_id: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(a.id || ''))
+              ? a.id
+              : null,
+            farmer_id: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(f.id || ''))
+              ? f.id
+              : null
           })
         }
       );
@@ -448,11 +477,12 @@ async function sendDemo(id) {
         id: Date.now() + sent,
         farmerId: f.id,
         announcementId: a.id,
-        status: 'Pending',
+        status: result.status || 'Pending',
         date: new Date().toISOString()
       });
 
       sent++;
+
     } catch (error) {
       failed++;
     }
@@ -460,7 +490,11 @@ async function sendDemo(id) {
 
   save();
   render();
-  toast(`Requests accepted: ${sent}. Failed: ${failed}.`, failed > 0);
+
+  toast(
+    `SMS requests accepted: ${sent}. Failed: ${failed}.`,
+    failed > 0
+  );
 }
 
   function exportCsv(){const rows=[['Farmer','Phone','Ward','Announcement','Status','Date'],...data.deliveries.map(d=>[farmer(d.farmerId)?.name||'',farmer(d.farmerId)?.phone||'',farmer(d.farmerId)?.ward||'',announcement(d.announcementId)?.title||'',d.status,d.date])];const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='bungoma-delivery-report.csv';a.click();URL.revokeObjectURL(url);}
