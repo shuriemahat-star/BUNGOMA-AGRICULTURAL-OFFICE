@@ -227,20 +227,55 @@ $('#register-form').addEventListener('submit', async e => {
   $('#login-error').textContent = '';
 });
   $('#nav').addEventListener('click', async e=>{
-  const b=e.target.closest('[data-page]');
-  if(!b)return;
-  page=b.dataset.page;
-  searchTerm='';
-  $$('.nav-link').forEach(n=>n.classList.toggle('active',n===b));
-  render();
+    const b=e.target.closest('[data-page]');
+    if(!b)return;
+    page=b.dataset.page;
+    searchTerm='';
+    $$('.nav-link').forEach(n=>n.classList.toggle('active',n===b));
+    render();
 
-  if(page==='farmers'){
-    await loadFarmersFromSupabase();
+    if(page==='farmers'){
+      await loadFarmersFromSupabase();
+    }
+  });
+
+  async function loadFarmersFromSupabase() {
+    const { data: farmers, error } = await supabaseClient
+      .from('profiles')
+      .select(`
+        id,
+        full_name,
+        farmer_profiles (
+          phone,
+          ward,
+          interests
+        )
+      `)
+      .eq('role', 'farmer');
+
+    if (error) {
+      console.error('Could not load farmers:', error);
+      toast('Could not load farmers: ' + error.message, true);
+      return;
+    }
+
+    data.farmers = (farmers || []).map(f => {
+      const details = Array.isArray(f.farmer_profiles)
+        ? f.farmer_profiles[0]
+        : f.farmer_profiles;
+
+      return {
+        id: f.id,
+        name: f.full_name || 'Unnamed farmer',
+        phone: details?.phone || '',
+        ward: details?.ward || '',
+        crop: details?.interests || ''
+      };
+    });
+
+    render();
   }
-});
 
-  render();
-}
   function render(){ $('#page-title').textContent=({dashboard:'Dashboard',farmers:'Farmers',announcements:'Announcements',deliveries:'Delivery log',reports:'Reports'})[page]; const c=$('#page-content'); if(page==='dashboard')c.innerHTML=dashboard(); if(page==='farmers')c.innerHTML=farmersPage();if(page==='announcements')c.innerHTML=announcementsPage();if(page==='deliveries')c.innerHTML=deliveriesPage();if(page==='reports')c.innerHTML=reportsPage(); }
   function dashboard(){const published=data.announcements.filter(a=>a.status==='Published').length;const delivered=data.deliveries.filter(d=>d.status==='Delivered'||d.status==='Confirmed').length;const rows=[...data.announcements].slice().reverse().slice(0,5).map(a=>`<tr><td><b>${esc(a.title)}</b></td><td>${esc(a.ward)}</td><td>${dateShort(a.date)}</td><td>${statusPill(a.status)}</td><td><button class="text-btn" data-action="edit-announcement" data-id="${a.id}">Edit</button></td></tr>`).join('');return `${intro('Good day, '+esc(user.name),'Here is a snapshot of extension communication activity.')}<div class="stats">${stat('Registered farmers',data.farmers.length,'Farmer records in the system')}${stat('Announcements',data.announcements.length,'Total created')}${stat('Published notices',published,'Available for delivery')}${stat('Delivered SMS',delivered,'Demo delivery records')}</div><div class="quick-grid"><div class="panel"><div class="panel-head"><h3>Recent announcements</h3><button class="text-btn" data-page="announcements">View all →</button></div>${table(['Announcement','Target ward','Date','Status',''],rows,'Create an announcement to get started.')}</div><div class="panel"><div class="panel-head"><h3>Quick actions</h3></div><button class="quick-action" data-action="add-farmer"><span><b>Register a farmer</b><small>Add farmer contact and ward details</small></span><strong>＋</strong></button><button class="quick-action" data-action="add-announcement"><span><b>Create announcement</b><small>Draft an agricultural extension notice</small></span><strong>＋</strong></button><button class="quick-action" data-page="deliveries"><span><b>Check delivery log</b><small>Review simulated message statuses</small></span><strong>→</strong></button><p class="report-note">GitHub Pages demo: records are saved in this browser using local storage. SMS sending is simulated.</p></div></div>`}
   function farmersPage(){const q=searchTerm.toLowerCase();const rows=data.farmers.filter(f=>[f.name,f.phone,f.ward,f.crop].some(x=>x.toLowerCase().includes(q))).map(f=>`<tr><td><b>${esc(f.name)}</b></td><td>${esc(f.phone)}</td><td>${esc(f.ward)}</td><td>${esc(f.crop)}</td><td><div class="table-actions"><button class="text-btn" data-action="edit-farmer" data-id="${f.id}">Edit</button><button class="text-btn danger" data-action="delete-farmer" data-id="${f.id}">Delete</button></div></td></tr>`).join('');return `${intro('Farmer directory','Manage farmer contacts and agricultural interests.','add-farmer','Add farmer')}<div class="panel"><div class="toolbar"><input id="search" placeholder="Search name, phone, ward or crop…" value="${esc(searchTerm)}"><span class="report-note">${data.farmers.length} farmer(s)</span></div>${table(['Farmer name','Phone','Ward','Interest','Actions'],rows)}</div>`}
