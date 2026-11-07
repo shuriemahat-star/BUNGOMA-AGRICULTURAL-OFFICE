@@ -407,7 +407,7 @@ async function sendDemo(id) {
     return;
   }
 
-  const testNumber = '254759573560';
+  const testNumber = '254739541709';
 
 const target = data.farmers.find(f => {
   const digits = String(f.phone || '').replace(/\D/g, '');
