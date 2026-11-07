@@ -493,8 +493,10 @@ const targets = target ? [target] : [];
       sent++;
 
     } catch (error) {
-      failed++;
-    }
+  console.error('SMS sending error:', error);
+  toast('SMS error: ' + error.message, true);
+  failed++;
+}
   }
 
   save();
