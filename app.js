@@ -407,9 +407,18 @@ async function sendDemo(id) {
     return;
   }
 
-  const targets = data.farmers.filter(
-    f => a.ward === 'All wards' || f.ward === a.ward
-  );
+  const testNumber = '254759573560';
+
+const target = data.farmers.find(f => {
+  const digits = String(f.phone || '').replace(/\D/g, '');
+  const normalized = digits.startsWith('0')
+    ? '254' + digits.slice(1)
+    : digits;
+
+  return normalized === testNumber;
+});
+
+const targets = target ? [target] : [];
 
   if (!targets.length) {
     toast('No farmers found for this ward.', true);
