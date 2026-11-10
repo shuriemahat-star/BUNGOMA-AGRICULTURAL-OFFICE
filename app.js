@@ -319,7 +319,33 @@ function table(headers, rows, emptyMessage) {
   `;
 }
   function reportsPage(){const delivered=data.deliveries.filter(d=>['Delivered','Confirmed'].includes(d.status)).length;const confirmed=data.deliveries.filter(d=>d.status==='Confirmed').length;const pending=data.deliveries.filter(d=>d.status==='Pending').length;const failed=data.deliveries.filter(d=>d.status==='Failed').length;const total=data.deliveries.length||1;return `${intro('Reports & coverage','A quick summary of farmer outreach and delivery outcomes.')}<div class="stats">${stat('Farmers registered',data.farmers.length,'All wards')}${stat('Messages recorded',data.deliveries.length,'Simulated deliveries')}${stat('Delivered / confirmed',delivered,Math.round(delivered/total*100)+'% of records')}${stat('Receipt confirmations',confirmed,'Confirmed by staff in demo')}</div><div class="panel"><div class="panel-head"><h3>Delivery status breakdown</h3></div>${[['Delivered',delivered],['Confirmed',confirmed],['Pending',pending],['Failed',failed]].map(([name,n])=>`<div class="bar-row"><span>${name}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,n/total*100)}%"></div></div><b>${n}</b></div>`).join('')}<p class="report-note">These figures are generated from the browser demo's local data, not from a live SMS provider.</p><button class="secondary" data-action="export">Export report as CSV</button></div>`}
-  const fields={farmer:[['name','Farmer name','text',true],['phone','Phone number','tel',true],['ward','Ward','select',true,['Kanduyi','Webuye','Kimilili','Tongaren','Bumula','Kabuchai','Sirisia','All wards']],['crop','Main interest','select',true,['Maize','Beans','Dairy','Poultry','Horticulture','Other']]],announcement:[['title','Announcement title','text',true],['message','Message body','textarea',true],['ward','Target ward','select',true,['All wards','Kanduyi','Webuye','Kimilili','Tongaren','Bumula','Kabuchai','Sirisia']],['date','Date','date',true],['status','Status','select',true,['Draft','Published']]]};
+
+const fields = {
+  farmer: [
+    ['name', 'Farmer name', 'text', true],
+    ['email', 'Farmer email', 'email', true],
+    ['phone', 'Phone number', 'tel', true],
+    ['ward', 'Ward', 'select', true, [
+      'Kanduyi', 'Webuye', 'Kimilili', 'Tongaren',
+      'Bumula', 'Kabuchai', 'Sirisia', 'All wards'
+    ]],
+    ['crop', 'Main interest', 'select', true, [
+      'Maize', 'Beans', 'Dairy', 'Poultry',
+      'Horticulture', 'Other'
+    ]]
+  ],
+  announcement: [
+    ['title', 'Announcement title', 'text', true],
+    ['message', 'Message body', 'textarea', true],
+    ['ward', 'Target ward', 'select', true, [
+      'All wards', 'Kanduyi', 'Webuye', 'Kimilili',
+      'Tongaren', 'Bumula', 'Kabuchai', 'Sirisia'
+    ]],
+    ['date', 'Date', 'date', true],
+    ['status', 'Status', 'select', true, ['Draft', 'Published']]
+  ]
+};
+
   function openForm(type,id=null){formType=type;editing=id;const item=id?(type==='farmer'?farmer(id):announcement(id)):null;$('#dialog-title').textContent=(id?'Edit ':'Add ')+(type==='farmer'?'farmer':'announcement');$('#dialog-fields').innerHTML=fields[type].map(([key,label,kind,required,options])=>{const val=item?.[key]??(key==='date'?new Date().toISOString().slice(0,10):key==='ward'?(type==='farmer'?'Kanduyi':'All wards'):key==='status'?'Draft':'');let input='';if(kind==='select')input=`<select name="${key}" ${required?'required':''}>${options.map(o=>`<option ${val===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`;else if(kind==='textarea')input=`<textarea name="${key}" ${required?'required':''}>${esc(val)}</textarea>`;else input=`<input name="${key}" type="${kind}" value="${esc(val)}" ${required?'required':''} ${key==='phone'?'pattern="[0-9+() -]{7,20}"':''}>`;return `<div class="field"><label>${label}</label>${input}</div>`}).join('');$('#item-dialog').showModal();}
   $('#close-dialog').addEventListener('click',()=>$('#item-dialog').close());$('#cancel-dialog').addEventListener('click',()=>$('#item-dialog').close());
   $('#item-form').addEventListener('submit', async e => {
