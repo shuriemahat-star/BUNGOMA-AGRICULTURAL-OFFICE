@@ -354,15 +354,53 @@ const fields = {
   const obj = Object.fromEntries(new FormData(e.currentTarget).entries());
 
   try {
-    if (formType === 'farmer') {
-      if (editing) {
-        Object.assign(farmer(editing), obj);
-      } else {
-        obj.id = Date.now();
-        data.farmers.push(obj);
-      }
+    
+if (formType === 'farmer') {
+  if (editing) {
+    Object.assign(farmer(editing), obj);
+    save();
+  } else {
+    const { data: sessionData, error: sessionError } =
+      await supabaseClient.auth.getSession();
 
-      save();
+    if (sessionError || !sessionData.session) {
+      throw new Error('Please sign in again.');
+    }
+
+    const response = await fetch(
+      'https://bungoma-agricultural-office-1.onrender.com/create-farmer-account',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + sessionData.session.access_token
+        },
+        body: JSON.stringify({
+          full_name: obj.name,
+          email: obj.email,
+          phone: obj.phone,
+          ward: obj.ward,
+          interests: obj.crop
+        })
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Farmer registration failed.');
+    }
+
+    data.farmers.push({
+      id: result.farmer_id,
+      name: obj.name,
+      phone: obj.phone,
+      ward: obj.ward,
+      crop: obj.crop
+    });
+
+    save();
+  }
 
     } else {
       const { data: authData, error: authError } =
