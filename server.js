@@ -207,10 +207,11 @@ app.post("/create-farmer-account", requireStaff, async (req, res) => {
 
     if (farmerError) throw farmerError;
 
-    res.status(201).json({
-      success: true,
-      message: "Invitation sent to farmer's email."
-    });
+   res.status(201).json({
+  success: true,
+  farmer_id: farmerId,
+  message: "Invitation sent to farmer's email."
+});
 
   } catch (error) {
     console.error("Farmer invitation failed:", error.message);
