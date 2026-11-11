@@ -32,7 +32,64 @@
   const announcement = id => data.announcements.find(a=>a.id===id);
   const statusPill = s => `<span class="pill ${esc(String(s).toLowerCase())}">${esc(s)}</span>`;
   function toast(msg, warning=false){const n=$('#notice');n.textContent=msg;n.classList.remove('hidden','warning');if(warning)n.classList.add('warning');setTimeout(()=>n.classList.add('hidden'),3500)}
-  function showApp(){ $('#login-screen').classList.add('hidden');$('#app').classList.remove('hidden');$('#profile-name').textContent=user.name;$('#profile-role').textContent=user.role;$('#avatar').textContent=user.name[0].toUpperCase();render(); }
+  async function showApp() {
+  $('#login-screen').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+
+  $('#profile-name').textContent = user.name;
+  $('#profile-role').textContent = user.role;
+  $('#avatar').textContent = user.name[0].toUpperCase();
+
+  try {
+    const { data: profiles, error: profileError } =
+      await supabaseClient
+        .from('profiles')
+        .select('id, full_name')
+        .eq('role', 'farmer');
+
+    if (profileError) throw profileError;
+
+    const { data: farmerProfiles, error: farmerError } =
+      await supabaseClient
+        .from('farmer_profiles')
+        .select('id, phone, ward, interests');
+
+    if (farmerError) throw farmerError;
+
+    const savedFarmers = profiles.map(p => {
+      const details = farmerProfiles.find(f => f.id === p.id);
+
+      return {
+        id: p.id,
+        name: p.full_name,
+        phone: details?.phone || '',
+        ward: details?.ward || '',
+        crop: details?.interests || ''
+      };
+    });
+
+    savedFarmers.forEach(f => {
+      const index = data.farmers.findIndex(
+        old => old.id === f.id ||
+          (old.phone && old.phone === f.phone)
+      );
+
+      if (index >= 0) {
+        data.farmers[index] = f;
+      } else {
+        data.farmers.push(f);
+      }
+    });
+
+    save();
+
+  } catch (error) {
+    console.error('Could not load farmers:', error);
+    toast('Could not load farmers from Supabase: ' + error.message, true);
+  }
+
+  render();
+}
 
     async function showFarmerDashboard() {
   $('#login-screen').classList.add('hidden');
