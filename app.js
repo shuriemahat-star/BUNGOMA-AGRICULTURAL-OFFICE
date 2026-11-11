@@ -661,6 +661,7 @@ const targets = target ? [target] : [];
     `SMS requests accepted: ${sent}. Failed: ${failed}.`,
     failed > 0
   );
+}
     async function updateFarmerLogin(farmerId) {
   const email = prompt("Enter Abuu's new email address:");
   if (!email) return;
@@ -711,7 +712,6 @@ const targets = target ? [target] : [];
     console.error("Farmer login update failed:", error);
     toast(error.message, true);
   }
-}
 }
 
   function exportCsv(){const rows=[['Farmer','Phone','Ward','Announcement','Status','Date'],...data.deliveries.map(d=>[farmer(d.farmerId)?.name||'',farmer(d.farmerId)?.phone||'',farmer(d.farmerId)?.ward||'',announcement(d.announcementId)?.title||'',d.status,d.date])];const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='bungoma-delivery-report.csv';a.click();URL.revokeObjectURL(url);}
