@@ -218,6 +218,49 @@ app.post("/create-farmer-account", requireStaff, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// Change the email of an existing farmer account
+app.post("/change-farmer-email", requireStaff, async (req, res) => {
+  try {
+    const { farmer_id, email } = req.body;
+
+    if (!farmer_id || !email || !email.includes("@")) {
+      return res.status(400).json({
+        error: "A valid farmer ID and email are required."
+      });
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, role")
+      .eq("id", farmer_id)
+      .eq("role", "farmer")
+      .single();
+
+    if (profileError || !profile) {
+      return res.status(404).json({
+        error: "Farmer account not found."
+      });
+    }
+
+    const { data, error } = await supabase.auth.admin.updateUserById(
+      farmer_id,
+      { email: email.trim().toLowerCase() }
+    );
+
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      message: "Email update submitted. Check the new email inbox for confirmation."
+    });
+
+  } catch (error) {
+    console.error("Farmer email update failed:", error.message);
+    return res.status(500).json({
+      error: error.message
+    });
+  }
+});
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Bungoma backend running on port ${PORT}`);
 });
