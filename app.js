@@ -661,6 +661,57 @@ const targets = target ? [target] : [];
     `SMS requests accepted: ${sent}. Failed: ${failed}.`,
     failed > 0
   );
+    async function updateFarmerLogin(farmerId) {
+  const email = prompt("Enter Abuu's new email address:");
+  if (!email) return;
+
+  const password = prompt("Create Abuu's new password (at least 8 characters):");
+  if (!password) return;
+
+  if (password.length < 8) {
+    toast("Password must be at least 8 characters.", true);
+    return;
+  }
+
+  if (!confirm("Update Abuu's login details?")) return;
+
+  try {
+    const { data: sessionData, error: sessionError } =
+      await supabaseClient.auth.getSession();
+
+    if (sessionError || !sessionData.session) {
+      throw new Error("Please sign in again.");
+    }
+
+    const response = await fetch(
+      "https://bungoma-agricultural-office-1.onrender.com/change-farmer-email",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + sessionData.session.access_token
+        },
+        body: JSON.stringify({
+          farmer_id: farmerId,
+          email: email.trim(),
+          password: password
+        })
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || "Account update failed.");
+    }
+
+    toast("Abuu's email and password updated successfully.");
+
+  } catch (error) {
+    console.error("Farmer login update failed:", error);
+    toast(error.message, true);
+  }
+}
 }
 
   function exportCsv(){const rows=[['Farmer','Phone','Ward','Announcement','Status','Date'],...data.deliveries.map(d=>[farmer(d.farmerId)?.name||'',farmer(d.farmerId)?.phone||'',farmer(d.farmerId)?.ward||'',announcement(d.announcementId)?.title||'',d.status,d.date])];const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='bungoma-delivery-report.csv';a.click();URL.revokeObjectURL(url);}
@@ -672,7 +723,8 @@ const rawId = b.dataset.id;if(a==='add-farmer')openForm('farmer');if(a==='edit-f
     console.error('Send SMS error:', error);
     toast('Could not start SMS: ' + error.message, true);
   });
-}if(a==='mark-delivered'){const d=data.deliveries.find(x=>x.id===id);d.status='Delivered';save();render();toast('Demo delivery marked delivered.')}if(a==='confirm'){const d=data.deliveries.find(x=>x.id===id);d.status='Confirmed';save();render();toast('Receipt confirmation recorded.')}if(a==='export')exportCsv();});
+}if(a==='mark-delivered'){const d=data.deliveries.find(x=>x.id===id);d.status='Delivered';save();render();toast('Demo delivery marked delivered.')}if(a==='confirm'){const d=data.deliveries.find(x=>x.id===id);d.status='Confirmed';save();render();toast('Receipt confirmation recorded.')}if (a === 'change-farmer-login') updateFarmerLogin(rawId);
+if(a==='export')exportCsv();});
   document.addEventListener('input',e=>{if(e.target.id==='search'){searchTerm=e.target.value;const pos=e.target.selectionStart;render();const i=$('#search');i.focus();i.setSelectionRange(pos,pos);}});
   save();
 })();
