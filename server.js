@@ -219,13 +219,20 @@ app.post("/create-farmer-account", requireStaff, async (req, res) => {
   }
 });
 // Change the email of an existing farmer account
+
 app.post("/change-farmer-email", requireStaff, async (req, res) => {
   try {
-    const { farmer_id, email } = req.body;
+    const { farmer_id, email, password } = req.body;
 
-    if (!farmer_id || !email || !email.includes("@")) {
+    if (
+      !farmer_id ||
+      !email ||
+      !email.includes("@") ||
+      !password ||
+      password.length < 8
+    ) {
       return res.status(400).json({
-        error: "A valid farmer ID and email are required."
+        error: "A valid email and password of at least 8 characters are required."
       });
     }
 
@@ -242,25 +249,30 @@ app.post("/change-farmer-email", requireStaff, async (req, res) => {
       });
     }
 
-    const { data, error } = await supabase.auth.admin.updateUserById(
+    const { error } = await supabase.auth.admin.updateUserById(
       farmer_id,
-      { email: email.trim().toLowerCase() }
+      {
+        email: email.trim().toLowerCase(),
+        password: password,
+        email_confirm: true
+      }
     );
 
     if (error) throw error;
 
     return res.json({
       success: true,
-      message: "Email update submitted. Check the new email inbox for confirmation."
+      message: "Farmer email and password updated successfully."
     });
 
   } catch (error) {
-    console.error("Farmer email update failed:", error.message);
+    console.error("Farmer account update failed:", error.message);
     return res.status(500).json({
       error: error.message
     });
   }
 });
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Bungoma backend running on port ${PORT}`);
 });
