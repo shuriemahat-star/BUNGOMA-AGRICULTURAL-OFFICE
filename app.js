@@ -716,7 +716,7 @@ const targets = target ? [target] : [];
 
   function exportCsv(){const rows=[['Farmer','Phone','Ward','Announcement','Status','Date'],...data.deliveries.map(d=>[farmer(d.farmerId)?.name||'',farmer(d.farmerId)?.phone||'',farmer(d.farmerId)?.ward||'',announcement(d.announcementId)?.title||'',d.status,d.date])];const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='bungoma-delivery-report.csv';a.click();URL.revokeObjectURL(url);}
   document.addEventListener('click',e=>{const pg=e.target.closest('[data-page]');if(pg&&pg.dataset.page){page=pg.dataset.page;$$('.nav-link').forEach(n=>n.classList.toggle('active',n.dataset.page===page));render();return}const b=e.target.closest('[data-action]');if(!b)return;const a = b.dataset.action;
-const id = b.dataset.id ? Number(b.dataset.id) : null;
+const id = b.dataset.id;
 const rawId = b.dataset.id;if(a==='add-farmer')openForm('farmer');if(a==='edit-farmer')openForm('farmer',id);if(a==='add-announcement')openForm('announcement');if(a==='edit-announcement')openForm('announcement',id);if(a==='delete-farmer'&&confirm('Delete this farmer record?')){data.farmers=data.farmers.filter(f=>f.id!==id);save();render();toast('Farmer record deleted.')}if(a==='delete-announcement'&&confirm('Delete this announcement?')){data.announcements=data.announcements.filter(x=>x.id!==id);save();render();toast('Announcement deleted.')}if(a==='publish'){const an=announcement(id);an.status='Published';save();render();toast('Announcement published.')}if (a === 'send') {
   console.log('Clicked element:', b);
 console.log('Button attributes:', b.outerHTML);
