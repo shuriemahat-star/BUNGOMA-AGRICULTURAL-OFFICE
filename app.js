@@ -562,18 +562,22 @@ async function sendDemo(id) {
     return;
   }
 
-  const testNumber = '254739541709';
+const announcementWard = String(a.ward || '').trim().toLowerCase();
 
-const target = data.farmers.find(f => {
-  const digits = String(f.phone || '').replace(/\D/g, '');
-  const normalized = digits.startsWith('0')
-    ? '254' + digits.slice(1)
-    : digits;
+const { data: registeredFarmers, error: farmerError } =
+  await supabaseClient
+    .from('farmer_profiles')
+    .select('id, phone, ward');
 
-  return normalized === testNumber;
+if (farmerError) throw farmerError;
+
+const targets = (registeredFarmers || []).filter(f => {
+  const farmerWard = String(f.ward || '').trim().toLowerCase();
+
+  return f.phone &&
+    (announcementWard === 'all wards' ||
+     farmerWard === announcementWard);
 });
-
-const targets = target ? [target] : [];
 
   if (!targets.length) {
     toast('No farmers found for this ward.', true);
