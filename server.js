@@ -145,7 +145,7 @@ const { error: logError } = await supabase
     announcement_id: announcement_id || null,
     farmer_id: farmer_id || null,
     phone: to,
-    status: providerStatus,
+    status: accepted ? "sent" : /^pending$/i.test(providerStatus) ? "pending" : "failed",
     provider_message_id: providerId
   });
 
