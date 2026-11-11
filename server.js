@@ -135,21 +135,31 @@ app.post("/send-sms", requireStaff, async (req, res) => {
       result?.SMSMessageData?.Recipients?.[0];
 
     const providerStatus = providerMessage?.status || "Pending";
-    const providerId = providerMessage?.messageId || null;
+const providerId = providerMessage?.messageId || null;
 
-    const { error: logError } = await supabase
-      .from("sms_logs")
-      .insert({
-        announcement_id: announcement_id || null,
-        farmer_id: farmer_id || null,
-        phone: to,
-        status: providerStatus,
-        provider_message_id: providerId
-      });
+const accepted = /^Success$/i.test(providerStatus);
 
-    if (logError) {
-      console.error("SMS log save failed:", logError.message);
-    }
+const { error: logError } = await supabase
+  .from("sms_logs")
+  .insert({
+    announcement_id: announcement_id || null,
+    farmer_id: farmer_id || null,
+    phone: to,
+    status: providerStatus,
+    provider_message_id: providerId
+  });
+
+if (logError) {
+  console.error("SMS log save failed:", logError.message);
+}
+
+if (!accepted) {
+  return res.status(502).json({
+    success: false,
+    error: "Africa's Talking did not accept the SMS.",
+    status: providerStatus
+  });
+}
 
     return res.json({
       success: true,
