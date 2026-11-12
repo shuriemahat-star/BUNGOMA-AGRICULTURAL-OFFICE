@@ -352,9 +352,7 @@ function farmersPage() {
           <div class="table-actions">
             <button class="text-btn" data-action="edit-farmer" data-id="${f.id}">Edit</button>
             <button class="text-btn danger" data-action="delete-farmer" data-id="${f.id}">Delete</button>
-            ${String(f.name).toLowerCase() === 'abuu'
-              ? `<button class="text-btn" data-action="change-farmer-login" data-id="${f.id}">Update login details</button>`
-              : ''}
+            
           </div>
         </td>
       </tr>
