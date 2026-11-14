@@ -722,12 +722,19 @@ const id = b.dataset.id;
 const rawId = b.dataset.id;if(a==='add-farmer')openForm('farmer');if(a==='edit-farmer')openForm('farmer',id);if(a==='add-announcement')openForm('announcement');if(a==='edit-announcement')openForm('announcement',id);if (a === 'delete-farmer' && confirm('Permanently delete this farmer account?')) {
   (async () => {
     try {
+      const { data: authData, error: authError } =
+        await supabaseClient.auth.getSession();
+
+      if (authError || !authData.session) {
+        throw new Error('Please sign in again.');
+      }
+
       const response = await fetch(
         'https://bungoma-agricultural-office-1.onrender.com/delete-farmer-account/' + encodeURIComponent(id),
         {
           method: 'DELETE',
           headers: {
-            'Authorization': 'Bearer ' + sessionData.session.access_token
+            'Authorization': 'Bearer ' + authData.session.access_token
           }
         }
       );
@@ -748,6 +755,24 @@ const rawId = b.dataset.id;if(a==='add-farmer')openForm('farmer');if(a==='edit-f
       toast('Could not delete farmer: ' + error.message, true);
     }
   })();
+}
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Farmer deletion failed.');
+      }
+
+      data.farmers = data.farmers.filter(f => f.id !== id);
+      save();
+      render();
+      toast('Farmer account deleted successfully.');
+
+    } catch (error) {
+      console.error('Farmer deletion error:', error);
+      toast('Could not delete farmer: ' + error.message, true);
+    }
+  });()
 }if(a==='delete-announcement'&&confirm('Delete this announcement?')){data.announcements=data.announcements.filter(x=>x.id!==id);save();render();toast('Announcement deleted.')}if(a==='publish'){const an=announcement(id);an.status='Published';save();render();toast('Announcement published.')}if (a === 'send') {
   console.log('Clicked element:', b);
 console.log('Button attributes:', b.outerHTML);
