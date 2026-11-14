@@ -757,7 +757,7 @@ const rawId = b.dataset.id;if(a==='add-farmer')openForm('farmer');if(a==='edit-f
   })();
 }
                                         
-}if(a==='delete-announcement'&&confirm('Delete this announcement?')){data.announcements=data.announcements.filter(x=>x.id!==id);save();render();toast('Announcement deleted.')}if(a==='publish'){const an=announcement(id);an.status='Published';save();render();toast('Announcement published.')}if (a === 'send') {
+if(a==='delete-announcement'&&confirm('Delete this announcement?')){data.announcements=data.announcements.filter(x=>x.id!==id);save();render();toast('Announcement deleted.')}if(a==='publish'){const an=announcement(id);an.status='Published';save();render();toast('Announcement published.')}if (a === 'send') {
   console.log('Clicked element:', b);
 console.log('Button attributes:', b.outerHTML);
 console.log('Send button clicked. Announcement ID:', id);
