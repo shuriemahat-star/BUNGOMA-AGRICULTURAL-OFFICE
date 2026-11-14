@@ -206,17 +206,17 @@ app.post("/create-farmer-account", requireStaff, async (req, res) => {
     const farmerId = data.user.id;
 
     const { error: profileError } = await supabase
-      .from("profiles")
-      .insert({
-        id: farmerId,
-        full_name: full_name.trim(),
-        role: "farmer"
-      });
+  .from("profiles")
+  .update({
+    full_name: full_name.trim(),
+    role: "farmer"
+  })
+  .eq("id", farmerId);
 
-    if (profileError) {
-      await supabase.auth.admin.deleteUser(farmerId);
-      throw profileError;
-    }
+if (profileError) {
+  await supabase.auth.admin.deleteUser(farmerId);
+  throw profileError;
+}
 
     const { error: farmerError } = await supabase
       .from("farmer_profiles")
