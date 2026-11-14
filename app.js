@@ -756,23 +756,7 @@ const rawId = b.dataset.id;if(a==='add-farmer')openForm('farmer');if(a==='edit-f
     }
   })();
 }
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Farmer deletion failed.');
-      }
-
-      data.farmers = data.farmers.filter(f => f.id !== id);
-      save();
-      render();
-      toast('Farmer account deleted successfully.');
-
-    } catch (error) {
-      console.error('Farmer deletion error:', error);
-      toast('Could not delete farmer: ' + error.message, true);
-    }
-  });()
+                                        
 }if(a==='delete-announcement'&&confirm('Delete this announcement?')){data.announcements=data.announcements.filter(x=>x.id!==id);save();render();toast('Announcement deleted.')}if(a==='publish'){const an=announcement(id);an.status='Published';save();render();toast('Announcement published.')}if (a === 'send') {
   console.log('Clicked element:', b);
 console.log('Button attributes:', b.outerHTML);
