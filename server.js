@@ -282,6 +282,62 @@ app.post("/change-farmer-email", requireStaff, async (req, res) => {
     });
   }
 });
+// Delete a farmer account permanently
+app.delete("/delete-farmer-account/:farmerId", requireStaff, async (req, res) => {
+  try {
+    const farmerId = req.params.farmerId;
+
+    // Check that the account exists and belongs to a farmer
+    const { data: farmer, error: lookupError } = await supabase
+      .from("profiles")
+      .select("id, role")
+      .eq("id", farmerId)
+      .single();
+
+    if (lookupError) throw lookupError;
+
+    if (farmer.role !== "farmer") {
+      return res.status(403).json({
+        error: "Only farmer accounts can be deleted."
+      });
+    }
+
+    // Delete the farmer's details
+    const { error: detailsError } = await supabase
+      .from("farmer_profiles")
+      .delete()
+      .eq("id", farmerId);
+
+    if (detailsError) throw detailsError;
+
+    // Delete the farmer's profile
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", farmerId);
+
+    if (profileError) throw profileError;
+
+    // Delete the farmer's authentication account
+    const { error: authError } = await supabase.auth.admin.deleteUser(
+      farmerId
+    );
+
+    if (authError) throw authError;
+
+    return res.json({
+      success: true,
+      message: "Farmer account deleted successfully."
+    });
+
+  } catch (error) {
+    console.error("Farmer deletion failed:", error.message);
+
+    return res.status(500).json({
+      error: error.message
+    });
+  }
+});
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Bungoma backend running on port ${PORT}`);
