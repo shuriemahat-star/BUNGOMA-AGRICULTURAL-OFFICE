@@ -462,7 +462,7 @@ if (formType === 'farmer') {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + sessionData.session.access_token
+          'Authorization': 'Bearer ' + (await supabaseClient.auth.getSession()).data.session.access_token
         },
         body: JSON.stringify({
           full_name: obj.name,
