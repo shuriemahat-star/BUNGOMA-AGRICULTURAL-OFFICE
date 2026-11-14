@@ -455,6 +455,12 @@ if (formType === 'farmer') {
     if (sessionError || !sessionData.session) {
       throw new Error('Please sign in again.');
     }
+      const password = prompt("Create a password for this farmer (at least 8 characters):");
+
+if (!password || password.length < 8) {
+  toast("Password must be at least 8 characters.", true);
+  return;
+}
 
     const response = await fetch(
       'https://bungoma-agricultural-office-1.onrender.com/create-farmer-account',
@@ -467,6 +473,7 @@ if (formType === 'farmer') {
         body: JSON.stringify({
           full_name: obj.name,
           email: obj.email,
+            password: password,
           phone: obj.phone,
           ward: obj.ward,
           interests: obj.crop
@@ -685,7 +692,7 @@ const targets = (registeredFarmers || []).filter(f => {
     if (sessionError || !sessionData.session) {
       throw new Error("Please sign in again.");
     }
-      const password = prompt("Create a password for this farmer (at least 8 characters):");
+      $('#item-form').addEventListener('submit'...)
 
 if (!password || password.length < 8) {
   toast("Password must be at least 8 characters.", true);
