@@ -174,23 +174,32 @@ if (!accepted) {
     });
   }
 });
-// Invite a farmer to create their own password
+
+// Create a farmer account directly without sending an email invitation
 app.post("/create-farmer-account", requireStaff, async (req, res) => {
   try {
-    const { full_name, email, phone, ward, interests } = req.body;
+    const { full_name, email, password, phone, ward, interests } = req.body;
 
-    if (!full_name || !email || !phone || !ward) {
+    if (!full_name || !email || !password || !phone || !ward) {
       return res.status(400).json({
-        error: "Name, email, phone and ward are required."
+        error: "Name, email, password, phone and ward are required."
       });
     }
 
-    const { data, error } = await supabase.auth.admin.inviteUserByEmail(
-      email.trim().toLowerCase(),
-      {
-        redirectTo: "https://shuriemahat-star.github.io/BUNGOMA-AGRICULTURAL-OFFICE/"
+    if (password.length < 8) {
+      return res.status(400).json({
+        error: "Password must be at least 8 characters."
+      });
+    }
+
+    const { data, error } = await supabase.auth.admin.createUser({
+      email: email.trim().toLowerCase(),
+      password: password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: full_name.trim()
       }
-    );
+    });
 
     if (error) throw error;
 
@@ -204,7 +213,10 @@ app.post("/create-farmer-account", requireStaff, async (req, res) => {
         role: "farmer"
       });
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      await supabase.auth.admin.deleteUser(farmerId);
+      throw profileError;
+    }
 
     const { error: farmerError } = await supabase
       .from("farmer_profiles")
@@ -215,19 +227,26 @@ app.post("/create-farmer-account", requireStaff, async (req, res) => {
         interests: interests || null
       });
 
-    if (farmerError) throw farmerError;
+    if (farmerError) {
+      await supabase.from("profiles").delete().eq("id", farmerId);
+      await supabase.auth.admin.deleteUser(farmerId);
+      throw farmerError;
+    }
 
-   res.status(201).json({
-  success: true,
-  farmer_id: farmerId,
-  message: "Invitation sent to farmer's email."
-});
+    return res.status(201).json({
+      success: true,
+      farmer_id: farmerId,
+      message: "Farmer account created successfully."
+    });
 
   } catch (error) {
-    console.error("Farmer invitation failed:", error.message);
-    res.status(500).json({ error: error.message });
+    console.error("Farmer account creation failed:", error.message);
+    return res.status(500).json({
+      error: error.message
+    });
   }
 });
+
 // Change the email of an existing farmer account
 
 app.post("/change-farmer-email", requireStaff, async (req, res) => {
