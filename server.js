@@ -219,13 +219,13 @@ if (profileError) {
 }
 
     const { error: farmerError } = await supabase
-      .from("farmer_profiles")
-      .insert({
-        id: farmerId,
-        phone: phone.trim(),
-        ward: ward.trim(),
-        interests: interests || null
-      });
+  .from("farmer_profiles")
+  .update({
+    phone: phone.trim(),
+    ward: ward.trim(),
+    interests: interests || null
+  })
+  .eq("id", farmerId);
 
     if (farmerError) {
       await supabase.from("profiles").delete().eq("id", farmerId);
