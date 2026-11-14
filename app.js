@@ -692,12 +692,6 @@ const targets = (registeredFarmers || []).filter(f => {
     if (sessionError || !sessionData.session) {
       throw new Error("Please sign in again.");
     }
-      $('#item-form').addEventListener('submit'...)
-
-if (!password || password.length < 8) {
-  toast("Password must be at least 8 characters.", true);
-  return;
-}
 
     const response = await fetch(
       "https://bungoma-agricultural-office-1.onrender.com/change-farmer-email",
