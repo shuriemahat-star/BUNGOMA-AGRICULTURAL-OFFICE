@@ -685,6 +685,12 @@ const targets = (registeredFarmers || []).filter(f => {
     if (sessionError || !sessionData.session) {
       throw new Error("Please sign in again.");
     }
+      const password = prompt("Create a password for this farmer (at least 8 characters):");
+
+if (!password || password.length < 8) {
+  toast("Password must be at least 8 characters.", true);
+  return;
+}
 
     const response = await fetch(
       "https://bungoma-agricultural-office-1.onrender.com/change-farmer-email",
@@ -697,6 +703,7 @@ const targets = (registeredFarmers || []).filter(f => {
         body: JSON.stringify({
           farmer_id: farmerId,
           email: email.trim(),
+            password: password,
           password: password
         })
       }
