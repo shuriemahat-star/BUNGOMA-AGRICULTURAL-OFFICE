@@ -379,11 +379,6 @@ function render(){
   if(page==='reports') c.innerHTML=reportsPage();
 }
 
-  if(page==='farmers') c.innerHTML=farmersPage();
-  if(page==='announcements') c.innerHTML=announcementsPage();
-  if(page==='deliveries') c.innerHTML=deliveriesPage();
-  if(page==='reports') c.innerHTML=reportsPage();
-}
  async function dashboard(){
   const response = await fetch('dashboard.html');
 
