@@ -389,7 +389,20 @@ function render(){
 
   return;
 }
-  if(page==='reports') c.innerHTML=reportsPage();
+  if(page==='reports'){
+  c.innerHTML='Loading reports...';
+
+  reportsPage()
+    .then(html=>{
+      if(page==='reports') c.innerHTML=html;
+    })
+    .catch(error=>{
+      console.error('Reports page loading failed:',error);
+      c.innerHTML='Could not load reports. Please refresh the page.';
+    });
+
+  return;
+}
 }
 
  async function dashboard(){
@@ -555,7 +568,61 @@ function table(headers, rows, emptyMessage) {
     </div>
   `;
 }
-  function reportsPage(){const delivered=data.deliveries.filter(d=>['Delivered','Confirmed'].includes(d.status)).length;const confirmed=data.deliveries.filter(d=>d.status==='Confirmed').length;const pending=data.deliveries.filter(d=>d.status==='Pending').length;const failed=data.deliveries.filter(d=>d.status==='Failed').length;const total=data.deliveries.length||1;return `${intro('Reports & coverage','A quick summary of farmer outreach and delivery outcomes.')}<div class="stats">${stat('Farmers registered',data.farmers.length,'All wards')}${stat('Messages recorded',data.deliveries.length,'Simulated deliveries')}${stat('Delivered / confirmed',delivered,Math.round(delivered/total*100)+'% of records')}${stat('Receipt confirmations',confirmed,'Confirmed by staff in demo')}</div><div class="panel"><div class="panel-head"><h3>Delivery status breakdown</h3></div>${[['Delivered',delivered],['Confirmed',confirmed],['Pending',pending],['Failed',failed]].map(([name,n])=>`<div class="bar-row"><span>${name}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,n/total*100)}%"></div></div><b>${n}</b></div>`).join('')}<p class="report-note">These figures are generated from the browser demo's local data, not from a live SMS provider.</p><button class="secondary" data-action="export">Export report as CSV</button></div>`}
+  async function reportsPage(){
+  const response = await fetch('reports.html');
+
+  if(!response.ok){
+    throw new Error('Could not load reports.html');
+  }
+
+  const template = await response.text();
+
+  const delivered = data.deliveries.filter(
+    d => ['Delivered','Confirmed'].includes(d.status)
+  ).length;
+
+  const confirmed = data.deliveries.filter(
+    d => d.status === 'Confirmed'
+  ).length;
+
+  const pending = data.deliveries.filter(
+    d => d.status === 'Pending'
+  ).length;
+
+  const failed = data.deliveries.filter(
+    d => d.status === 'Failed'
+  ).length;
+
+  const total = data.deliveries.length || 1;
+
+  const reportStats =
+    stat('Farmers registered',data.farmers.length,'All wards') +
+    stat('Messages recorded',data.deliveries.length,'Simulated deliveries') +
+    stat('Delivered / confirmed',delivered,Math.round(delivered/total*100)+'% of records') +
+    stat('Receipt confirmations',confirmed,'Confirmed by staff in demo');
+
+  const reportBreakdown = [
+    ['Delivered',delivered],
+    ['Confirmed',confirmed],
+    ['Pending',pending],
+    ['Failed',failed]
+  ].map(([name,n]) => `
+    <div class="bar-row">
+      <span>${name}</span>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${Math.min(100,n/total*100)}%"></div>
+      </div>
+      <b>${n}</b>
+    </div>
+  `).join('');
+
+  return template
+    .replace('{{REPORT_INTRO}}',
+      intro('Reports & coverage','A quick summary of farmer outreach and delivery outcomes.')
+    )
+    .replace('{{REPORT_STATS}}',reportStats)
+    .replace('{{REPORT_BREAKDOWN}}',reportBreakdown);
+}
 
 const fields = {
   farmer: [
