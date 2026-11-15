@@ -375,7 +375,20 @@ function render(){
   }
 
   if(page==='announcements') c.innerHTML=announcementsPage();
-  if(page==='deliveries') c.innerHTML=deliveriesPage();
+  if(page==='deliveries'){
+  c.innerHTML='Loading delivery log...';
+
+  deliveriesPage()
+    .then(html=>{
+      if(page==='deliveries') c.innerHTML=html;
+    })
+    .catch(error=>{
+      console.error('Delivery log loading failed:',error);
+      c.innerHTML='Could not load delivery log. Please refresh the page.';
+    });
+
+  return;
+}
   if(page==='reports') c.innerHTML=reportsPage();
 }
 
@@ -469,7 +482,42 @@ async function farmersPage() {
     .replace('{{FARMER_TABLE}}', farmerTable);
 }
   function announcementsPage(){const rows=data.announcements.slice().reverse().map(a=>`<tr><td><b>${esc(a.title)}</b><div class="report-note">${esc(a.message.slice(0,70))}${a.message.length>70?'…':''}</div></td><td>${esc(a.ward)}</td><td>${dateShort(a.date)}</td><td>${statusPill(a.status)}</td><td><div class="table-actions"><button class="text-btn" data-action="edit-announcement" data-id="${a.id}">Edit</button>${a.status==='Draft'?`<button class="text-btn" data-action="publish" data-id="${a.id}">Publish</button>`:`<button class="text-btn" data-action="send" data-id="${a.id}">Send demo SMS</button>`}<button class="text-btn danger" data-action="delete-announcement" data-id="${a.id}">Delete</button></div></td></tr>`).join('');return `${intro('Announcements','Create notices, publish them and simulate SMS delivery.','add-announcement','New announcement')}<div class="panel">${table(['Announcement','Ward','Created','Status','Actions'],rows,'No announcements yet.')}</div>`}
-  function deliveriesPage(){const rows=data.deliveries.slice().reverse().map(d=>`<tr><td>${esc(farmer(d.farmerId)?.name||'Historical demo record')}</td><td>${esc(announcement(d.announcementId)?.title||'Deleted announcement')}</td><td>${dateShort(d.date)}</td><td>${statusPill(d.status)}</td><td>${d.status==='Pending'?`<button class="text-btn" data-action="mark-delivered" data-id="${d.id}">Mark delivered</button>`:''}${d.status==='Delivered'?`<button class="text-btn" data-action="confirm" data-id="${d.id}">Confirm receipt</button>`:''}</td></tr>`).join('');return `${intro('Delivery log','Review demo SMS records and update delivery or receipt status.')}<div class="panel"><div class="toolbar"><span class="report-note">${data.deliveries.length} delivery record(s). Real SMS is not sent from this static page.</span></div>${table(['Farmer','Announcement','Date','Status','Action'],rows,'No delivery records yet. Publish a notice and select Send demo SMS.')}</div>`}
+  async function deliveriesPage(){
+  const response = await fetch('deliveries.html');
+
+  if(!response.ok){
+    throw new Error('Could not load deliveries.html');
+  }
+
+  const template = await response.text();
+
+  const rows = data.deliveries.slice().reverse().map(d => `
+    <tr>
+      <td>${esc(farmer(d.farmerId)?.name || 'Historical demo record')}</td>
+      <td>${esc(announcement(d.announcementId)?.title || 'Deleted announcement')}</td>
+      <td>${dateShort(d.date)}</td>
+      <td>${statusPill(d.status)}</td>
+      <td>
+        ${d.status === 'Pending'
+          ? `<button class="text-btn" data-action="mark-delivered" data-id="${d.id}">Mark delivered</button>`
+          : ''}
+        ${d.status === 'Delivered'
+          ? `<button class="text-btn" data-action="confirm" data-id="${d.id}">Confirm receipt</button>`
+          : ''}
+      </td>
+    </tr>
+  `).join('');
+
+  const deliveryTable = table(
+    ['Farmer','Announcement','Date','Status','Action'],
+    rows,
+    'No delivery records yet. Publish a notice and select Send SMS.'
+  );
+
+  return template
+    .replace('{{DELIVERY_COUNT}}', data.deliveries.length)
+    .replace('{{DELIVERY_TABLE}}', deliveryTable);
+}
     function intro(title, sub, button, label) {
   return `
     <div class="page-intro">
