@@ -333,8 +333,84 @@ $('#register-form').addEventListener('submit', async e => {
     render();
   }
 
-  function render(){ $('#page-title').textContent=({dashboard:'Dashboard',farmers:'Farmers',announcements:'Announcements',deliveries:'Delivery log',reports:'Reports'})[page]; const c=$('#page-content'); if(page==='dashboard')c.innerHTML=dashboard(); if(page==='farmers')c.innerHTML=farmersPage();if(page==='announcements')c.innerHTML=announcementsPage();if(page==='deliveries')c.innerHTML=deliveriesPage();if(page==='reports')c.innerHTML=reportsPage(); }
-  function dashboard(){const published=data.announcements.filter(a=>a.status==='Published').length;const delivered=data.deliveries.filter(d=>d.status==='Delivered'||d.status==='Confirmed').length;const rows=[...data.announcements].slice().reverse().slice(0,5).map(a=>`<tr><td><b>${esc(a.title)}</b></td><td>${esc(a.ward)}</td><td>${dateShort(a.date)}</td><td>${statusPill(a.status)}</td><td><button class="text-btn" data-action="edit-announcement" data-id="${a.id}">Edit</button></td></tr>`).join('');return `${intro('Good day, '+esc(user.name),'Here is a snapshot of extension communication activity.')}<div class="stats">${stat('Registered farmers',data.farmers.length,'Farmer records in the system')}${stat('Announcements',data.announcements.length,'Total created')}${stat('Published notices',published,'Available for delivery')}${stat('Delivered SMS',delivered,'Demo delivery records')}</div><div class="quick-grid"><div class="panel"><div class="panel-head"><h3>Recent announcements</h3><button class="text-btn" data-page="announcements">View all →</button></div>${table(['Announcement','Target ward','Date','Status',''],rows,'Create an announcement to get started.')}</div><div class="panel"><div class="panel-head"><h3>Quick actions</h3></div><button class="quick-action" data-action="add-farmer"><span><b>Register a farmer</b><small>Add farmer contact and ward details</small></span><strong>＋</strong></button><button class="quick-action" data-action="add-announcement"><span><b>Create announcement</b><small>Draft an agricultural extension notice</small></span><strong>＋</strong></button><button class="quick-action" data-page="deliveries"><span><b>Check delivery log</b><small>Review simulated message statuses</small></span><strong>→</strong></button><p class="report-note">GitHub Pages demo: records are saved in this browser using local storage. SMS sending is simulated.</p></div></div>`}
+ function render(){
+  $('#page-title').textContent=({
+    dashboard:'Dashboard',
+    farmers:'Farmers',
+    announcements:'Announcements',
+    deliveries:'Delivery log',
+    reports:'Reports'
+  })[page];
+
+  const c=$('#page-content');
+
+  if(page==='dashboard'){
+    c.innerHTML='Loading dashboard...';
+
+    dashboard()
+      .then(html=>{
+        if(page==='dashboard') c.innerHTML=html;
+      })
+      .catch(error=>{
+        console.error('Dashboard loading failed:',error);
+        c.innerHTML='Could not load dashboard. Please refresh the page.';
+      });
+
+    return;
+  }
+
+  if(page==='farmers') c.innerHTML=farmersPage();
+  if(page==='announcements') c.innerHTML=announcementsPage();
+  if(page==='deliveries') c.innerHTML=deliveriesPage();
+  if(page==='reports') c.innerHTML=reportsPage();
+}
+ async function dashboard(){
+  const response = await fetch('dashboard.html');
+
+  if(!response.ok){
+    throw new Error('Could not load dashboard.html');
+  }
+
+  const template = await response.text();
+
+  const published = data.announcements.filter(
+    a => a.status === 'Published'
+  ).length;
+
+  const delivered = data.deliveries.filter(
+    d => d.status === 'Delivered' || d.status === 'Confirmed'
+  ).length;
+
+  const rows = [...data.announcements]
+    .slice()
+    .reverse()
+    .slice(0,5)
+    .map(a => `<tr>
+      <td><b>${esc(a.title)}</b></td>
+      <td>${esc(a.ward)}</td>
+      <td>${dateShort(a.date)}</td>
+      <td>${statusPill(a.status)}</td>
+      <td>
+        <button class="text-btn"
+          data-action="edit-announcement"
+          data-id="${a.id}">Edit</button>
+      </td>
+    </tr>`).join('');
+
+  const announcementTable = table(
+    ['Announcement','Target ward','Date','Status',''],
+    rows,
+    'Create an announcement to get started.'
+  );
+
+  return template
+    .replace('{{OFFICER_NAME}}', esc(user.name))
+    .replace('{{FARMER_COUNT}}', data.farmers.length)
+    .replace('{{ANNOUNCEMENT_COUNT}}', data.announcements.length)
+    .replace('{{PUBLISHED_COUNT}}', published)
+    .replace('{{DELIVERED_COUNT}}', delivered)
+    .replace('{{ANNOUNCEMENT_TABLE}}', announcementTable);
+}
  
 function farmersPage() {
   const q = searchTerm.toLowerCase();
