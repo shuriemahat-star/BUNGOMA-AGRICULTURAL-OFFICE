@@ -495,7 +495,7 @@ async function farmersPage() {
     .replace('{{FARMER_TABLE}}', farmerTable);
 }
   function announcementsPage(){const rows=data.announcements.slice().reverse().map(a=>`<tr><td><b>${esc(a.title)}</b><div class="report-note">${esc(a.message.slice(0,70))}${a.message.length>70?'…':''}</div></td><td>${esc(a.ward)}</td><td>${dateShort(a.date)}</td><td>${statusPill(a.status)}</td><td><div class="table-actions"><button class="text-btn" data-action="edit-announcement" data-id="${a.id}">Edit</button>${a.status==='Draft'?`<button class="text-btn" data-action="publish" data-id="${a.id}">Publish</button>`:`<button class="text-btn" data-action="send" data-id="${a.id}">Send demo SMS</button>`}<button class="text-btn danger" data-action="delete-announcement" data-id="${a.id}">Delete</button></div></td></tr>`).join('');return `${intro('Announcements','Create notices, publish them and simulate SMS delivery.','add-announcement','New announcement')}<div class="panel">${table(['Announcement','Ward','Created','Status','Actions'],rows,'No announcements yet.')}</div>`}
-  async function deliveriesPage(){
+async function deliveriesPage(){
   const response = await fetch('deliveries.html');
 
   if(!response.ok){
@@ -504,31 +504,54 @@ async function farmersPage() {
 
   const template = await response.text();
 
-  const rows = data.deliveries.slice().reverse().map(d => `
+  const { data: logs, error } = await supabaseClient
+    .from('sms_logs')
+    .select(`
+      id,
+      message,
+      created_at,
+      status,
+      phone,
+      farmer_id,
+      announcement_id,
+      provider_message_id
+    `)
+    .order('created_at', { ascending: false });
+
+  if(error){
+    throw new Error('Could not load SMS records: ' + error.message);
+  }
+
+  const rows = logs.map(log => `
     <tr>
-      <td>${esc(farmer(d.farmerId)?.name || 'Historical demo record')}</td>
-      <td>${esc(announcement(d.announcementId)?.title || 'Deleted announcement')}</td>
-      <td>${dateShort(d.date)}</td>
-      <td>${statusPill(d.status)}</td>
-      <td>
-        ${d.status === 'Pending'
-          ? `<button class="text-btn" data-action="mark-delivered" data-id="${d.id}">Mark delivered</button>`
-          : ''}
-        ${d.status === 'Delivered'
-          ? `<button class="text-btn" data-action="confirm" data-id="${d.id}">Confirm receipt</button>`
-          : ''}
-      </td>
+      <td>${esc(log.id ?? '')}</td>
+      <td>${esc(log.created_at ? new Date(log.created_at).toLocaleString() : '')}</td>
+      <td>${esc(log.phone || '')}</td>
+      <td>${esc(log.farmer_id || '')}</td>
+      <td>${esc(log.announcement_id || '')}</td>
+      <td>${esc(log.message || '')}</td>
+      <td>${statusPill(log.status || 'Unknown')}</td>
+      <td>${esc(log.provider_message_id || 'Not available')}</td>
     </tr>
   `).join('');
 
   const deliveryTable = table(
-    ['Farmer','Announcement','Date','Status','Action'],
+    [
+      'ID',
+      'Date',
+      'Phone',
+      'Farmer ID',
+      'Announcement ID',
+      'Message',
+      'Status',
+      'Provider Message ID'
+    ],
     rows,
-    'No delivery records yet. Publish a notice and select Send SMS.'
+    'No SMS records found in Supabase.'
   );
 
   return template
-    .replace('{{DELIVERY_COUNT}}', data.deliveries.length)
+    .replace('{{DELIVERY_COUNT}}', logs.length)
     .replace('{{DELIVERY_TABLE}}', deliveryTable);
 }
     function intro(title, sub, button, label) {
