@@ -374,7 +374,22 @@ function render(){
     return;
   }
 
-  if(page==='announcements') c.innerHTML=announcementsPage();
+  if(page === 'announcements') {
+  c.innerHTML = 'Loading announcements...';
+
+  loadAnnouncementsFromSupabase()
+    .then(() => {
+      if (page === 'announcements') {
+        c.innerHTML = announcementsPage();
+      }
+    })
+    .catch(error => {
+      console.error('Announcements loading failed:', error);
+      c.innerHTML = 'Could not load announcements: ' + esc(error.message);
+    });
+
+  return;
+}
   if(page==='deliveries'){
   c.innerHTML='Loading delivery log...';
 
@@ -494,6 +509,31 @@ async function farmersPage() {
     .replace('{{FARMER_COUNT}}', data.farmers.length)
     .replace('{{FARMER_TABLE}}', farmerTable);
 }
+    
+async function loadAnnouncementsFromSupabase() {
+  const { data: announcements, error } = await supabaseClient
+    .from('announcements')
+    .select('id, title, message, target_ward, created_at, status')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  data.announcements = (announcements || []).map(a => ({
+    id: a.id,
+    title: a.title,
+    message: a.message,
+    ward: a.target_ward,
+    date: a.created_at ? a.created_at.slice(0, 10) : '',
+    status: String(a.status).toLowerCase() === 'published'
+      ? 'Published'
+      : 'Draft'
+  }));
+
+  save();
+}
+
   function announcementsPage(){const rows=data.announcements.slice().reverse().map(a=>`<tr><td><b>${esc(a.title)}</b><div class="report-note">${esc(a.message.slice(0,70))}${a.message.length>70?'…':''}</div></td><td>${esc(a.ward)}</td><td>${dateShort(a.date)}</td><td>${statusPill(a.status)}</td><td><div class="table-actions"><button class="text-btn" data-action="edit-announcement" data-id="${a.id}">Edit</button>${a.status==='Draft'?`<button class="text-btn" data-action="publish" data-id="${a.id}">Publish</button>`:`<button class="text-btn" data-action="send" data-id="${a.id}">Send demo SMS</button>`}<button class="text-btn danger" data-action="delete-announcement" data-id="${a.id}">Delete</button></div></td></tr>`).join('');return `${intro('Announcements','Create notices, publish them and simulate SMS delivery.','add-announcement','New announcement')}<div class="panel">${table(['Announcement','Ward','Created','Status','Actions'],rows,'No announcements yet.')}</div>`}
 
 async function deliveriesPage(){
