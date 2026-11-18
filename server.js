@@ -9,11 +9,17 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: "10kb" }));
 
 // Allow requests from the Bungoma GitHub Pages website
-const allowedOrigin =
-  "https://shuriemahat-star.github.io";
+const allowedOrigins = [
+  "https://shuriemahat-star.github.io",
+  "https://bungomaoffice.duckdns.org"
+];
 
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  const origin = req.headers.origin;
+
+if (allowedOrigins.includes(origin)) {
+  res.setHeader("Access-Control-Allow-Origin", origin);
+}
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
